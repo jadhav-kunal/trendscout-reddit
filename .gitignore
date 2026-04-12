@@ -1,0 +1,15 @@
+# Python
+__pycache__/
+*.pyc
+
+# Virtual env
+venv/
+
+# Data (VERY IMPORTANT)
+data/
+
+# Logs
+logs/
+
+# OS
+.DS_Store
