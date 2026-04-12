@@ -2,7 +2,6 @@ import requests
 import time
 import json
 import logging
-from datetime import datetime
 from tqdm import tqdm
 import os
 
@@ -10,10 +9,11 @@ import os
 # CONFIG
 # =========================
 
-SUBREDDIT = "startups"  # change this
-SORT = "new"            # new / hot
-LIMIT = 25              # posts per request
-OUTPUT_FILE = "reddit_data.jsonl"
+SUBREDDIT = "startups"
+SORT = "new"
+LIMIT = 25
+
+OUTPUT_FILE = "data/raw/reddit_posts.jsonl"
 
 HEADERS = {
     "User-Agent": "TrendScoutAI/1.0 (Academic Research)"
@@ -34,37 +34,27 @@ logging.basicConfig(
 
 def fetch_posts(subreddit, sort="new"):
     url = f"https://www.reddit.com/r/{subreddit}/{sort}/.json?limit={LIMIT}"
-    
-    try:
-        response = requests.get(url, headers=HEADERS)
-        response.raise_for_status()
-        return response.json()
-    except Exception as e:
-        logging.error(f"Error fetching posts: {e}")
-        return None
+    response = requests.get(url, headers=HEADERS)
+    response.raise_for_status()
+    return response.json()
 
 
 def fetch_comments(permalink):
     url = f"https://www.reddit.com{permalink}.json"
-    
-    try:
-        response = requests.get(url, headers=HEADERS)
-        response.raise_for_status()
-        return response.json()
-    except Exception as e:
-        logging.error(f"Error fetching comments: {e}")
-        return None
+    response = requests.get(url, headers=HEADERS)
+    response.raise_for_status()
+    return response.json()
 
 
-def extract_comments(comment_data):
+def extract_comments(children):
     comments = []
 
-    def recurse(children):
-        for child in children:
-            if child["kind"] != "t1":
+    def recurse(nodes):
+        for node in nodes:
+            if node["kind"] != "t1":
                 continue
 
-            data = child["data"]
+            data = node["data"]
 
             comments.append({
                 "id": data.get("id"),
@@ -74,39 +64,34 @@ def extract_comments(comment_data):
                 "created_utc": data.get("created_utc")
             })
 
-            # nested replies
-            if data.get("replies"):
-                if isinstance(data["replies"], dict):
-                    recurse(data["replies"]["data"]["children"])
+            if data.get("replies") and isinstance(data["replies"], dict):
+                recurse(data["replies"]["data"]["children"])
 
-    recurse(comment_data)
+    recurse(children)
     return comments
 
 
-def save_jsonl(file_path, data):
-    with open(file_path, "a", encoding="utf-8") as f:
-        f.write(json.dumps(data) + "\n")
+def save_record(record):
+    with open(OUTPUT_FILE, "a", encoding="utf-8") as f:
+        f.write(json.dumps(record) + "\n")
 
 
 # =========================
 # MAIN PIPELINE
 # =========================
 
-def scrape_subreddit(subreddit):
-    logging.info(f"🚀 Starting scrape for r/{subreddit}")
+def run_scraper():
+    logging.info(f"Scraping r/{SUBREDDIT} ...")
 
-    posts_json = fetch_posts(subreddit, SORT)
-    
-    if not posts_json:
-        logging.error("No data received.")
-        return
+    os.makedirs("data/raw", exist_ok=True)
 
-    posts = posts_json["data"]["children"]
+    data = fetch_posts(SUBREDDIT, SORT)
+    posts = data["data"]["children"]
 
-    for post_wrapper in tqdm(posts, desc=f"Scraping r/{subreddit}"):
-        post = post_wrapper["data"]
+    for item in tqdm(posts, desc="Fetching posts"):
+        post = item["data"]
 
-        post_data = {
+        record = {
             "post_id": post.get("id"),
             "title": post.get("title"),
             "selftext": post.get("selftext"),
@@ -119,28 +104,18 @@ def scrape_subreddit(subreddit):
         }
 
         # Fetch comments
-        comments_json = fetch_comments(post_data["permalink"])
+        try:
+            comments_json = fetch_comments(record["permalink"])
+            children = comments_json[1]["data"]["children"]
+            record["comments"] = extract_comments(children)
+        except Exception as e:
+            logging.warning(f"Failed to fetch comments: {e}")
+            record["comments"] = []
 
-        if comments_json and len(comments_json) > 1:
-            comment_tree = comments_json[1]["data"]["children"]
-            comments = extract_comments(comment_tree)
-        else:
-            comments = []
-
-        post_data["comments"] = comments
-
-        # Save
-        save_jsonl(OUTPUT_FILE, post_data)
-
-        # Respect rate limit
+        save_record(record)
         time.sleep(1)
 
-    logging.info("✅ Scraping completed")
-
-
-# =========================
-# RUN
-# =========================
+    logging.info("Scraping complete!")
 
 if __name__ == "__main__":
-    scrape_subreddit(SUBREDDIT)
+    run_scraper()
