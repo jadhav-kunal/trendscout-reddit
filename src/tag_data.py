@@ -17,7 +17,10 @@ TAG_RULES = {
     "HIRING": ["hiring", "job", "engineer", "recruit", "salary"],
     "TECH": ["ai", "llm", "model", "api", "saas", "ml"],
     "MARKETING": ["growth", "seo", "users", "acquisition", "traffic"],
-    "PRODUCT": ["feature", "mvp", "build", "launch", "prototype"]
+    "PRODUCT": ["feature", "mvp", "build", "launch", "prototype"],
+    "FINANCE": ["revenue", "profit", "burn", "runway", "valuation", "cash", "credit"],
+    "CAREER": ["mba", "career", "job switch", "entry level"],
+    "PRICING": ["pricing", "discount", "subscription", "freemium", "cost"],
 }
 
 # -------------------------
@@ -26,16 +29,24 @@ TAG_RULES = {
 
 def assign_tags(text):
     text_lower = text.lower()
-    tags = []
+    tag_scores = {}
 
     for tag, keywords in TAG_RULES.items():
+        score = 0
         for word in keywords:
             if word in text_lower:
-                tags.append(tag)
-                break
+                score += 1
 
-    return list(set(tags))
+        if score > 0:
+            tag_scores[tag] = score
 
+    # Sort by relevance
+    sorted_tags = sorted(tag_scores.items(), key=lambda x: x[1], reverse=True)
+
+    # Limit tags (avoid over-tagging)
+    top_tags = [tag for tag, _ in sorted_tags[:3]]
+
+    return top_tags if top_tags else ["OTHER"]
 
 # -------------------------
 # PROCESS PIPELINE

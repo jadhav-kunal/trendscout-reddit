@@ -27,13 +27,18 @@ def normalize_text(text):
 
     return text.strip()
 
+def calculate_importance(score, text):
+    length_bonus = 0.1 if len(text.split()) > 50 else 0
 
-def calculate_importance(score, comments):
-    return math.log(1 + score) + 0.5 * math.log(1 + comments)
-
+    return (
+        0.7 * math.log1p(score) +   # engagement signal
+        0.2 * length_bonus          # small boost for detailed content
+    )
 
 def is_valid_record(text, score, author):
     if not text or len(text) < MIN_TEXT_LENGTH:
+        return False
+    if len(text.split()) < 8:
         return False
     if score < MIN_SCORE:
         return False
@@ -63,12 +68,16 @@ def process_data():
             author = post.get("author")
 
             if is_valid_record(text, score, author):
+                importance = calculate_importance(score, text)
+
+                if importance < 1.0:
+                    continue
                 record = {
                     "id": post_id,
                     "type": "post",
                     "text": text,
                     "score": score,
-                    "importance": calculate_importance(score, post.get("num_comments", 0))
+                    "importance": importance
                 }
                 outfile.write(json.dumps(record) + "\n")
 
@@ -79,13 +88,16 @@ def process_data():
                 c_author = comment.get("author")
 
                 if is_valid_record(c_text, c_score, c_author):
+                    c_importance = calculate_importance(c_score, c_text)
+                    if c_importance < 1.0:
+                        continue
                     record = {
                         "id": comment.get("id"),
                         "type": "comment",
                         "post_id": post_id,
                         "text": c_text,
                         "score": c_score,
-                        "importance": calculate_importance(c_score, 0)
+                        "importance": c_importance
                     }
                     outfile.write(json.dumps(record) + "\n")
 
