@@ -1,6 +1,13 @@
 from neo4j import GraphDatabase
 import json
 from tqdm import tqdm
+import argparse
+
+parser = argparse.ArgumentParser()
+parser.add_argument("--subreddit", required=True)
+args = parser.parse_args()
+
+SUBREDDIT = args.subreddit
 
 # -------------------------
 # CONFIG
@@ -10,7 +17,7 @@ NEO4J_URI = "bolt://localhost:7687"
 USERNAME = "neo4j"
 PASSWORD = "reddit123kg"
 
-INPUT_FILE = "data/processed/reddit_tagged.jsonl"
+INPUT_FILE = f"data/processed/{SUBREDDIT}_tagged.jsonl"
 
 # -------------------------
 # DRIVER
@@ -50,8 +57,7 @@ def load_data():
         with open(INPUT_FILE, "r") as f:
             for line in tqdm(f):
                 chunk = json.loads(line)
-                session.write_transaction(create_graph, chunk)
-
+                session.execute_write(create_graph, chunk)
 
 if __name__ == "__main__":
     print("Building Knowledge Graph...")

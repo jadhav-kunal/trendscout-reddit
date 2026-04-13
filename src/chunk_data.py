@@ -3,9 +3,16 @@ import logging
 import os
 from tqdm import tqdm
 import uuid
+import argparse
 
-INPUT_FILE = "data/processed/reddit_cleaned.jsonl"
-OUTPUT_FILE = "data/chunks/reddit_chunks.jsonl"
+parser = argparse.ArgumentParser()
+parser.add_argument("--subreddit", required=True)
+args = parser.parse_args()
+
+SUBREDDIT = args.subreddit
+
+INPUT_FILE = f"data/processed/{SUBREDDIT}_cleaned.jsonl"
+OUTPUT_FILE = f"data/chunks/{SUBREDDIT}_chunks.jsonl"
 
 MAX_WORDS = 120  # per chunk
 

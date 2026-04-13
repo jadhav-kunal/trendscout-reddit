@@ -2,9 +2,16 @@ import json
 import logging
 import os
 from tqdm import tqdm
+import argparse
 
-INPUT_FILE = "data/chunks/reddit_chunks.jsonl"
-OUTPUT_FILE = "data/processed/reddit_tagged.jsonl"
+parser = argparse.ArgumentParser()
+parser.add_argument("--subreddit", required=True)
+args = parser.parse_args()
+
+SUBREDDIT = args.subreddit
+
+INPUT_FILE = f"data/chunks/{SUBREDDIT}_chunks.jsonl"
+OUTPUT_FILE = f"data/processed/{SUBREDDIT}_tagged.jsonl"
 
 logging.basicConfig(level=logging.INFO)
 

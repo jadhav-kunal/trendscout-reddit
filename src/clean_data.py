@@ -4,9 +4,16 @@ import math
 import logging
 import os
 from tqdm import tqdm
+import argparse
 
-INPUT_FILE = "data/raw/reddit_posts.jsonl"
-OUTPUT_FILE = "data/processed/reddit_cleaned.jsonl"
+parser = argparse.ArgumentParser()
+parser.add_argument("--subreddit", required=True)
+args = parser.parse_args()
+
+SUBREDDIT = args.subreddit
+
+INPUT_FILE = f"data/raw/{SUBREDDIT}_posts.jsonl"
+OUTPUT_FILE = f"data/processed/{SUBREDDIT}_cleaned.jsonl"
 
 MIN_SCORE = 1
 MIN_TEXT_LENGTH = 20

@@ -4,16 +4,20 @@ import json
 import logging
 from tqdm import tqdm
 import os
+import argparse
 
 # =========================
 # CONFIG
 # =========================
 
-SUBREDDIT = "startups"
+parser = argparse.ArgumentParser()
+parser.add_argument("--subreddit", required=True, help="Subreddit name")
+args = parser.parse_args()
+
+SUBREDDIT = args.subreddit
+OUTPUT_FILE = f"data/raw/{SUBREDDIT}_posts.jsonl"
 SORT = "new"
 LIMIT = 25
-
-OUTPUT_FILE = "data/raw/reddit_posts.jsonl"
 
 HEADERS = {
     "User-Agent": "TrendScoutAI/1.0 (Academic Research)"
