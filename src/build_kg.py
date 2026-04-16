@@ -35,13 +35,15 @@ def create_graph(tx, chunk):
     tags = chunk.get("tags", [])
     chunk_id = chunk["chunk_id"]
     importance = chunk["importance"]
+    url = chunk.get("url")  
 
     # Create chunk node
     tx.run("""
         MERGE (c:Chunk {id: $chunk_id})
         SET c.text = $text,
-            c.importance = $importance
-    """, chunk_id=chunk_id, text=text, importance=importance)
+            c.importance = $importance,
+            c.url = $url
+    """, chunk_id=chunk_id, text=text, importance=importance, url=url)
 
     # Create tag relationships
     for tag in tags:
